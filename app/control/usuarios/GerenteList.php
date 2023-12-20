@@ -1,24 +1,33 @@
 <?php
 
+use Adianti\Base\TStandardList;
 use Adianti\Control\TAction;
+use Adianti\Control\TPage;
 use Adianti\Core\AdiantiApplicationConfig;
+use Adianti\Core\AdiantiCoreApplication;
+use Adianti\Database\TCriteria;
+use Adianti\Database\TFilter;
+use Adianti\Database\TRepository;
+use Adianti\Database\TTransaction;
 use Adianti\Registry\TSession;
+use Adianti\Widget\Base\TElement;
+use Adianti\Widget\Container\TPanelGroup;
+use Adianti\Widget\Container\TVBox;
+use Adianti\Widget\Datagrid\TDataGrid;
+use Adianti\Widget\Datagrid\TDataGridAction;
+use Adianti\Widget\Datagrid\TDataGridColumn;
+use Adianti\Widget\Datagrid\TPageNavigation;
+use Adianti\Widget\Dialog\TMessage;
 use Adianti\Widget\Form\TCombo;
+use Adianti\Widget\Form\TDateTime;
 use Adianti\Widget\Form\TEntry;
 use Adianti\Widget\Form\TLabel;
+use Adianti\Widget\Util\TDropDown;
+use Adianti\Widget\Util\TXMLBreadCrumb;
+use Adianti\Wrapper\BootstrapDatagridWrapper;
 use Adianti\Wrapper\BootstrapFormBuilder;
 
-/**
- * SystemUserList
- *
- * @version    1.0
- * @package    control
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    http://www.adianti.com.br/framework-license
- */
-class SystemUserList extends TStandardList
+class GerenteList extends TStandardList
 {
     protected $form;     // registration form
     protected $datagrid; // listing
@@ -26,10 +35,7 @@ class SystemUserList extends TStandardList
     protected $formgrid;
     protected $deleteButton;
     protected $transformCallback;
-    
-    /**
-     * Page constructor
-     */
+
     public function __construct()
     {
         parent::__construct();
@@ -45,8 +51,8 @@ class SystemUserList extends TStandardList
         parent::addFilterField('active', '=', 'active'); // filterField, operator, formField
         
         // creates the form
-        $this->form = new BootstrapFormBuilder('form_search_SystemUser');
-        $this->form->setFormTitle(_t('Users'));
+        $this->form = new BootstrapFormBuilder('form_search_gerente');
+        $this->form->setFormTitle('Gerentes');
         
 
         // create the form fields
@@ -69,12 +75,12 @@ class SystemUserList extends TStandardList
         $active->setSize('70%');
         
         // keep the form filled during navigation with session data
-        $this->form->setData( TSession::getValue('SystemUser_filter_data') );
+        $this->form->setData( TSession::getValue('Gerente_filter_data') );
         
         // add the search form actions
         $btn = $this->form->addAction(_t('Find'), new TAction(array($this, 'onSearch')), 'fa:search');
         $btn->class = 'btn btn-sm btn-primary';
-        $this->form->addAction(_t('New'),  new TAction(array('SystemUserForm', 'onEdit')), 'fa:plus green');
+        $this->form->addAction(_t('New'),  new TAction(array('GerenteForm', 'onEdit')), 'fa:plus green');
         
         // creates a DataGrid
         $this->datagrid = new BootstrapDatagridWrapper(new TDataGrid);
@@ -170,7 +176,7 @@ class SystemUserList extends TStandardList
         $column_email->setAction($order_email);
         
         // create EDIT action
-        $action_edit = new TDataGridAction(array('SystemUserForm', 'onEdit'));
+        $action_edit = new TDataGridAction(array('GerenteForm', 'onEdit'));
         $action_edit->setButtonClass('btn btn-default');
         $action_edit->setLabel(_t('Edit'));
         $action_edit->setImage('far:edit blue');
@@ -219,7 +225,7 @@ class SystemUserList extends TStandardList
         $this->pageNavigation->setAction(new TAction(array($this, 'onReload')));
         $this->pageNavigation->setWidth($this->datagrid->getWidth());
         
-        $panel = new TPanelGroup;
+        $panel = new TPanelGroup();
         $panel->add($this->datagrid)->style = 'overflow-x:auto';
         $panel->addFooter($this->pageNavigation);
         
@@ -241,7 +247,76 @@ class SystemUserList extends TStandardList
         
         parent::add($container);
     }
-    
+
+    public function onReload($param = NULL)
+    {
+        try {
+            TTransaction::open('permission');
+            $data = (array) $this->form->getData();
+            $userId = TSession::getValue('userid');
+            $unit = (object) SystemUser::find($userId)->get_unit();
+
+            $repository = new TRepository('SystemUser');
+            $limit = 10;
+            
+            $criteria = new TCriteria;
+                                    
+            if (empty($param['order']))
+            {
+                $param['order'] = 'id';
+                $param['direction'] = 'asc';
+            }
+            
+            $criteria->setProperties($param); // order, offset
+            $criteria->setProperty('limit', $limit);
+
+            $criteria->add(new TFilter('unit_id', '=', $unit->id));
+
+            if (!empty($data['id'])) {
+                $criteria->add(new TFilter('id', '=', $data['id']));
+            }
+
+            if (!empty($data['name'])) {
+                $criteria->add(new TFilter('name', '=', $data['name']));
+            }
+
+            if (!empty($data['email'])) {
+                $criteria->add(new TFilter('email', '=', $data['email']));
+            }
+
+            if (!empty($data['active'])) {
+                $criteria->add(new TFilter('active', '=', $data['active']));
+            }
+
+            $objects = $repository->load( $criteria );
+
+            $this->datagrid->clear();
+            
+            if ($objects)
+            {
+                foreach($objects as $object)
+                {
+                    $this->datagrid->addItem($object);
+                }
+            }
+            
+            $criteria->resetProperties();
+            $count = $repository->count($criteria);
+            
+            $this->pageNavigation->setCount($count); // count of records
+            $this->pageNavigation->setProperties($param); // order, page
+            $this->pageNavigation->setLimit($limit); // limit
+                        
+            TTransaction::close();
+            $this->loaded = true;
+      
+            TTransaction::close();
+        } catch (Exception $e) {
+
+        }
+        
+    }
+
     /**
      * Turn on/off an user
      */
