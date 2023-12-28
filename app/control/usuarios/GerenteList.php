@@ -24,6 +24,7 @@ use Adianti\Widget\Form\TEntry;
 use Adianti\Widget\Form\TLabel;
 use Adianti\Widget\Util\TDropDown;
 use Adianti\Widget\Util\TXMLBreadCrumb;
+use Adianti\Widget\Wrapper\TDBCombo;
 use Adianti\Wrapper\BootstrapDatagridWrapper;
 use Adianti\Wrapper\BootstrapFormBuilder;
 
@@ -44,10 +45,8 @@ class GerenteList extends TStandardList
         
         parent::setDatabase('permission');            // defines the database
         parent::setActiveRecord('SystemUser');   // defines the active record
-        parent::setDefaultOrder('id', 'asc');         // defines the default order
-        parent::addFilterField('id', '=', 'id'); // filterField, operator, formField
+        parent::setDefaultOrder('name', 'asc');         // defines the default order
         parent::addFilterField('name', 'like', 'name'); // filterField, operator, formField
-        parent::addFilterField('email', 'like', 'email'); // filterField, operator, formField
         parent::addFilterField('active', '=', 'active'); // filterField, operator, formField
         
         // creates the form
@@ -56,22 +55,16 @@ class GerenteList extends TStandardList
         
 
         // create the form fields
-        $id = new TEntry('id');
         $name = new TEntry('name');
-        $email = new TEntry('email');
         $active = new TCombo('active');
         
         $active->addItems( [ 'Y' => _t('Yes'), 'N' => _t('No') ] );
         
         // add the fields
-        $this->form->addFields( [new TLabel('Id')], [$id] );
         $this->form->addFields( [new TLabel(_t('Name'))], [$name] );
-        $this->form->addFields( [new TLabel(_t('Email'))], [$email] );
         $this->form->addFields( [new TLabel(_t('Active'))], [$active] );
         
-        $id->setSize('30%');
         $name->setSize('70%');
-        $email->setSize('70%');
         $active->setSize('70%');
         
         // keep the form filled during navigation with session data
@@ -90,22 +83,22 @@ class GerenteList extends TStandardList
         
 
         // creates the datagrid columns
-        $column_id = new TDataGridColumn('id', 'Id', 'center', 50);
         $column_name = new TDataGridColumn('name', _t('Name'), 'left');
         $column_login = new TDataGridColumn('login', _t('Login'), 'left');
-        $column_email = new TDataGridColumn('email', _t('Email'), 'left');
+        //$column_email = new TDataGridColumn('email', _t('Email'), 'left');
+        $column_regiao = new TDataGridColumn('regiaoGerente->nome', 'Regiao', 'left');
         $column_active = new TDataGridColumn('active', _t('Active'), 'center');
         $column_term_policy = new TDataGridColumn('accepted_term_policy', _t('Terms of use and privacy policy'), 'center');
         
         $column_login->enableAutoHide(500);
-        $column_email->enableAutoHide(500);
+        //$column_email->enableAutoHide(500);
         $column_active->enableAutoHide(500);
         $column_term_policy->enableAutoHide(500);
         // add the columns to the DataGrid
-        $this->datagrid->addColumn($column_id);
         $this->datagrid->addColumn($column_name);
         $this->datagrid->addColumn($column_login);
-        $this->datagrid->addColumn($column_email);
+        //$this->datagrid->addColumn($column_email);
+        $this->datagrid->addColumn($column_regiao);
         $this->datagrid->addColumn($column_active);
         
         if (!empty($ini['general']['require_terms']) && $ini['general']['require_terms'] == '1')
@@ -157,11 +150,6 @@ class GerenteList extends TStandardList
 
             return $div;
         });
-
-        // creates the datagrid column actions
-        $order_id = new TAction(array($this, 'onReload'));
-        $order_id->setParameter('order', 'id');
-        $column_id->setAction($order_id);
         
         $order_name = new TAction(array($this, 'onReload'));
         $order_name->setParameter('order', 'name');
@@ -173,7 +161,7 @@ class GerenteList extends TStandardList
         
         $order_email = new TAction(array($this, 'onReload'));
         $order_email->setParameter('order', 'email');
-        $column_email->setAction($order_email);
+        //$column_email->setAction($order_email);
         
         // create EDIT action
         $action_edit = new TDataGridAction(array('GerenteForm', 'onEdit'));
@@ -192,12 +180,12 @@ class GerenteList extends TStandardList
         $this->datagrid->addAction($action_del);
         
         // create CLONE action
-        $action_clone = new TDataGridAction(array($this, 'onClone'));
-        $action_clone->setButtonClass('btn btn-default');
-        $action_clone->setLabel(_t('Clone'));
-        $action_clone->setImage('far:clone green');
-        $action_clone->setField('id');
-        $this->datagrid->addAction($action_clone);
+        // $action_clone = new TDataGridAction(array($this, 'onClone'));
+        // $action_clone->setButtonClass('btn btn-default');
+        // $action_clone->setLabel(_t('Clone'));
+        // $action_clone->setImage('far:clone green');
+        // $action_clone->setField('id');
+        // $this->datagrid->addAction($action_clone);
         
         // create ONOFF action
         $action_onoff = new TDataGridAction(array($this, 'onTurnOnOff'));
@@ -208,17 +196,17 @@ class GerenteList extends TStandardList
         $this->datagrid->addAction($action_onoff);
         
         // create ONOFF action
-        $action_person = new TDataGridAction(array($this, 'onImpersonation'));
-        $action_person->setButtonClass('btn btn-default');
-        $action_person->setLabel(_t('Impersonation'));
-        $action_person->setImage('far:user-circle gray');
-        $action_person->setFields(['id','login']);
-        $this->datagrid->addAction($action_person);
+        // $action_person = new TDataGridAction(array($this, 'onImpersonation'));
+        // $action_person->setButtonClass('btn btn-default');
+        // $action_person->setLabel(_t('Impersonation'));
+        // $action_person->setImage('far:user-circle gray');
+        // $action_person->setFields(['id','login']);
+        // $this->datagrid->addAction($action_person);
         
         // create the datagrid model
         $this->datagrid->createModel();
         $this->datagrid->disableDefaultClick();
-        
+
         // create the page navigation
         $this->pageNavigation = new TPageNavigation;
         $this->pageNavigation->enableCounters();
@@ -270,7 +258,8 @@ class GerenteList extends TStandardList
             $criteria->setProperties($param); // order, offset
             $criteria->setProperty('limit', $limit);
 
-            $criteria->add(new TFilter('unit_id', '=', $unit->id));
+            $criteria->add(new TFilter('system_unit_id', '=', $unit->id));
+            $criteria->add(new TFilter('id', 'IN','(SELECT system_user_id FROM system_user_group WHERE system_group_id = 3)'));
 
             if (!empty($data['id'])) {
                 $criteria->add(new TFilter('id', '=', $data['id']));

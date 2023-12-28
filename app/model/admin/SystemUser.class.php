@@ -19,6 +19,7 @@ class SystemUser extends TRecord
     
     private $frontpage;
     private $unit;
+    private $regiao;
     private $system_user_groups = array();
     private $system_user_programs = array();
     private $system_user_units = array();
@@ -125,9 +126,21 @@ class SystemUser extends TRecord
         // loads the associated object
         if (empty($this->unit))
             $this->unit = new SystemUnit($this->system_unit_id);
-    
+        
         // returns the associated object
         return $this->unit;
+    }
+
+    public function get_regiaoGerente()
+    {
+        if (empty($this->regiao)) {
+            $userRegiao = Gerente::where('user_id', '=', $this->id)->first();
+            if (!empty($userRegiao->id)) {
+                $this->regiao = new Regiao($userRegiao->regiao_id);
+            }
+        }
+
+        return $this->regiao;
     }
     
     /**
@@ -141,7 +154,33 @@ class SystemUser extends TRecord
         $object->system_user_id = $this->id;
         $object->store();
     }
+
+    public function addUserGerente(Regiao $regiao)
+    {
+        
+        $object = new Gerente();
+        $object->nome       = $this->name;
+        $object->regiao_id  = $regiao->id;
+        $object->user_id    = $this->id;
+        $object->unit_id    = $this->system_unit_id;
+        $object->store();
+    }
+
+    public function editUserGerete(Regiao $regiao)
+    {
+        $userGerente = $this->getUserGerenteForUser();        
+
+        $object = new Gerente($userGerente->id);
+        $object->regiao_id = $regiao->id;
+        $object->nome = $this->name;
+        $object->store();
+    }
     
+    public function getUserGerenteForUser()
+    {
+       return Gerente::where('user_id', '=', $this->id)->first();
+    }
+
     /**
      * Add a Unit to the user
      * @param $object Instance of SystemUnit

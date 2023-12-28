@@ -4,14 +4,18 @@ use Adianti\Control\TAction;
 use Adianti\Control\TPage;
 use Adianti\Database\TCriteria;
 use Adianti\Database\TFilter;
+use Adianti\Database\TRepository;
 use Adianti\Database\TTransaction;
 use Adianti\Registry\TSession;
 use Adianti\Validator\TEmailValidator;
 use Adianti\Validator\TRequiredValidator;
 use Adianti\Widget\Container\TVBox;
+use Adianti\Widget\Dialog\TMessage;
+use Adianti\Widget\Form\TCheckGroup;
 use Adianti\Widget\Form\TCheckList;
 use Adianti\Widget\Form\TCombo;
 use Adianti\Widget\Form\TEntry;
+use Adianti\Widget\Form\TFile;
 use Adianti\Widget\Form\TForm;
 use Adianti\Widget\Form\TFormSeparator;
 use Adianti\Widget\Form\TLabel;
@@ -42,11 +46,8 @@ class GerenteForm extends TPage
         $unit = (object) SystemUser::find($userId)->get_unit();
         TTransaction::close();
 
-        $criteria = new TCriteria;
-        $criteria->add(new TFilter('id', '=', $unit->id));
-
-        $criteriaGroups = new TCriteria;
-        $criteriaGroups->add(new TFilter('id', '!=', 1));
+        $regiaoCriteria = new TCriteria;
+        $regiaoCriteria->add(new TFilter('unit_id', '=', $unit->id));
         
         $id            = new TEntry('id');
         $name          = new TEntry('name');
@@ -54,11 +55,11 @@ class GerenteForm extends TPage
         $password      = new TPassword('password');
         $repassword    = new TPassword('repassword');
         $email         = new TEntry('email');
-        //$unit_id       = new TDBCombo('system_unit_id','permission','SystemUnit','id','name', null, $criteria);
+        $regiao_id      = new TDBCombo('regiao_id', 'permission', 'Regiao', 'id', 'nome', 'nome', $regiaoCriteria);
+        //$unit_id     = new TDBCombo('system_unit_id','permission','SystemUnit','id','name', null, $criteria);
         $unit_id       = new TCombo('system_unit_id');
-        $groups        = new TDBCheckGroup('groups','permission','SystemGroup','id','name', null, $criteriaGroups);
+        //$groups      = new TDBCheckGroup('groups','permission','SystemGroup','id','name', null, $criteriaGroups);
         $frontpage_id  = new TDBUniqueSearch('frontpage_id', 'permission', 'SystemProgram', 'id', 'name', 'name');
-        //$units         = new TDBCheckGroup('units','permission','SystemUnit','id','name');
         $phone         = new TEntry('phone');
         $address       = new TEntry('address');
         $function_name = new TEntry('function_name');
@@ -74,30 +75,11 @@ class GerenteForm extends TPage
         $unit_id->setDefaultOption(false);
         $unit_id->setValue($unit->id);
         $unit_id->setEditable(false);
-
-
-        // $units->setLayout('horizontal');
-        // if ($units->getLabels())
-        // {
-        //     foreach ($units->getLabels() as $label)
-        //     {
-        //         $label->setSize(200);
-        //     }
-        // }
-        
-        $groups->setLayout('horizontal');
-        if ($groups->getLabels())
-        {
-            foreach ($groups->getLabels() as $label)
-            {
-                $label->setSize(200);
-            }
-        }
         
         $btn = $this->form->addAction( _t('Save'), new TAction(array($this, 'onSave')), 'far:save');
         $btn->class = 'btn btn-sm btn-primary';
         $this->form->addActionLink( _t('Clear'), new TAction(array($this, 'onEdit')), 'fa:eraser red');
-        $this->form->addActionLink( _t('Back'), new TAction(array('SystemUserList','onReload')), 'far:arrow-alt-circle-left blue');
+        $this->form->addActionLink( _t('Back'), new TAction(array('GerenteList','onReload')), 'far:arrow-alt-circle-left blue');
         
         // define the sizes
         $id->setSize('50%');
@@ -118,49 +100,15 @@ class GerenteForm extends TPage
         $login->addValidation('Login', new TRequiredValidator);
         $email->addValidation('Email', new TEmailValidator);
         $unit_id->addValidation('Unidade Principal', new TRequiredValidator);
+        $regiao_id->addValidation('Região', new TRequiredValidator);
         
         $this->form->addFields( [new TLabel('ID')], [$id],  [new TLabel(_t('Name'))], [$name] );
         $this->form->addFields( [new TLabel(_t('Login'))], [$login],  [new TLabel(_t('Email'))], [$email] );
         $this->form->addFields( [new TLabel(_t('Address'))], [$address],  [new TLabel(_t('Phone'))], [$phone] );
-        $this->form->addFields( [new TLabel(_t('Function'))], [$function_name],  [new TLabel(_t('About'))], [$about] );
+        $this->form->addFields( [new TLabel(_t('Function'))], [$function_name],  [new TLabel('Região')], [$regiao_id] );
         $this->form->addFields( [new TLabel(_t('Main unit'))], [$unit_id],  [new TLabel(_t('Front page'))], [$frontpage_id] );
-        $this->form->addFields( [new TLabel(_t('Password'))], [$password],  [new TLabel(_t('Password confirmation'))], [$repassword] );
-        //$this->form->addFields( [new TFormSeparator(_t('Units'))] );
-        //$this->form->addFields( [$units] );
-        $this->form->addFields( [new TFormSeparator(_t('Groups'))] );
-        $this->form->addFields( [$groups] );
-        
-        // $this->program_list = new TCheckList('program_list');
-        // $this->program_list->setIdColumn('id');
-        // $this->program_list->addColumn('id',    'ID',    'center',  '10%');
-        // $col_name    = $this->program_list->addColumn('name', _t('Name'),    'left',   '50%');
-        // $col_program = $this->program_list->addColumn('controller', _t('Menu path'),    'left',   '40%');
-        // $col_program->enableAutoHide(500);
-        // $this->program_list->setHeight(150);
-        // $this->program_list->makeScrollable();
-        
-        // $col_name->enableSearch();
-        // $search_name = $col_name->getInputSearch();
-        // $search_name->placeholder = _t('Search');
-        // $search_name->style = 'width:50%;margin-left: 4px; border-radius: 4px';
-        
-        // $col_program->setTransformer( function($value, $object, $row) {
-        //     $menuparser = new TMenuParser('menu.xml');
-        //     $paths = $menuparser->getPath($value);
-            
-        //     if ($paths)
-        //     {
-        //         return implode(' &raquo; ', $paths);
-        //     }
-        // });
-        
-        //$this->form->addFields( [new TFormSeparator(_t('Programs'))] );
-        //$this->form->addFields( [$this->program_list] );
-        
-        // TTransaction::open('permission');
-        // $this->program_list->addItems( SystemProgram::get() );
-        // TTransaction::close();
-        
+        $this->form->addFields( [new TLabel(_t('Password'))], [$password],  [new TLabel(_t('Password confirmation'))], [$repassword] );     
+
         $container = new TVBox;
         $container->style = 'width: 100%';
         $container->add(new TXMLBreadCrumb('menu.xml', 'GerenteList'));
@@ -174,6 +122,7 @@ class GerenteForm extends TPage
     {
         try
         {
+            
             // open a transaction with database 'permission'
             TTransaction::open('permission');
             
@@ -182,7 +131,7 @@ class GerenteForm extends TPage
             
             $object = new SystemUser;
             $object->fromArray( (array) $data );
-            
+
             unset($object->accepted_term_policy);
 
             $senha = $object->password;
@@ -190,6 +139,10 @@ class GerenteForm extends TPage
             if( empty($object->login) )
             {
                 throw new Exception(TAdiantiCoreTranslator::translate('The field ^1 is required', _t('Login')));
+            }
+
+            if (empty($param['regiao_id'])) {
+                throw new Exception("O campo região é obrigatório.");
             }
             
             if( empty($object->id) )
@@ -230,6 +183,14 @@ class GerenteForm extends TPage
             }
             
             $object->store();
+            
+            $userGerente = $object->getUserGerenteForUser();
+
+            if (empty($$userGerente->id)) {
+                $object->addUserGerente(new Regiao($data->regiao_id));
+            }else {
+                $object->editUserGerete(new Regiao($data->regiao_id));
+            }
 
             if ($object->password)
             {
@@ -237,13 +198,11 @@ class GerenteForm extends TPage
             }
             $object->clearParts();
             
-            if( !empty($data->groups) )
-            {
-                foreach( $data->groups as $group_id )
-                {
-                    $object->addSystemUserGroup( new SystemGroup($group_id) );
-                }
-            }
+            //ADICIONA ID DO GERENTE
+            $object->addSystemUserGroup( new SystemGroup(3));
+
+           
+            
             
             if( !empty($data->units) )
             {
@@ -286,7 +245,6 @@ class GerenteForm extends TPage
             {
                 // get the parameter $key
                 $key=$param['key'];
-                
                 // open a transaction with database 'permission'
                 TTransaction::open('permission');
                 
@@ -319,11 +277,14 @@ class GerenteForm extends TPage
                 {
                     $program_ids[] = $program->id;
                 }
+
+                $regiao = $object->get_regiaoGerente();
                 
-                $object->program_list = $program_ids;
-                $object->groups = $groups;
-                $object->units  = $units;
-                
+                $object->program_list   = $program_ids;
+                $object->groups         = $groups;
+                $object->units          = $units;
+                $object->regiao_id         = $regiao->id;
+
                 // fill the form with the active record data
                 $this->form->setData($object);
                 
