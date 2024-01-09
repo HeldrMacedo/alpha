@@ -10,6 +10,10 @@
                 <icon>fas:user fa-user-tie</icon>
                 <action>GerenteList</action>
             </menuitem>
+            <menuitem label='Cambistas'>
+                <icon>fas:user fa-user-tie</icon>
+                <action>CambistaList</action>
+            </menuitem>
         </menu>
     </menuitem>
     <menuitem label='_t{Administration}'>
