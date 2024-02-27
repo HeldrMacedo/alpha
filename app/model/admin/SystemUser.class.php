@@ -166,6 +166,23 @@ class SystemUser extends TRecord
         $object->store();
     }
 
+    public function addUserCambista(Regiao $regiao, $data)
+    {
+        $object = new Cambista();
+        $object->nome                   = $this->name;
+        $object->gerente_id             = $data->gerente_id;
+        $object->comissao               = $data->comissao;
+        $object->pode_cancelar          = $data->pode_cancelar;
+        $object->pode_cancelar_tempo    = $data->pode_cancelar_tempo;
+        $object->limite_venda           = $data->limite_venda;
+        $object->exibe_comissao         = $data->exibe_comissao;
+        $object->pode_reimprimir        = $data->pode_reimprimir;
+        $object->regiao_id              = $regiao->id;
+        $object->usuario_id             = $this->id;
+        $object->unit_id                = $this->system_unit_id;
+        $object->store();
+    }
+
     public function editUserGerete(Regiao $regiao)
     {
         $userGerente = $this->getUserGerenteForUser();        
@@ -175,10 +192,35 @@ class SystemUser extends TRecord
         $object->nome = $this->name;
         $object->store();
     }
+
+    public function editUserCambista(Regiao $regiao)
+    {
+        $userCambista = $this->getUserCambistaForUser();
+
+        $object = new Cambista($userCambista->id);
+        $object->nome                   = $this->name;
+        $object->gerente_id             = $data->gerente_id;
+        $object->comissao               = $data->comissao;
+        $object->pode_cancelar          = $data->pode_cancelar;
+        $object->pode_cancelar_tempo    = $data->pode_cancelar_tempo;
+        $object->limite_venda           = $data->limite_venda;
+        $object->exibe_comissao         = $data->exibe_comissao;
+        $object->pode_reimprimir        = $data->pode_reimprimir;
+        $object->regiao_id              = $regiao->id;
+        $object->usuario_id             = $this->id;
+        $object->unit_id                = $this->system_unit_id;
+        $object->store();
+
+    }
     
     public function getUserGerenteForUser()
     {
        return Gerente::where('user_id', '=', $this->id)->first();
+    }
+
+    public function getUserCambistaForUser()
+    {
+        return Cambista::where('usuario_id', '=', $this->id)->first();
     }
 
     /**

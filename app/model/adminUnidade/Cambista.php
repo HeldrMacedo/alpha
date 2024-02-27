@@ -21,6 +21,7 @@ class Cambista extends TRecord
         parent::addAttribute('usuario_id');
         parent::addAttribute('pode_cancelar_tempo');
         parent::addAttribute('pode_reimprimir');
+        parent::addAttribute('usuario_id');
         parent::addAttribute('unit_id');
     }
 

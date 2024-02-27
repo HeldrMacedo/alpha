@@ -68,6 +68,8 @@ class GerenteForm extends TPage
         $password->disableAutoComplete();
         $repassword->disableAutoComplete();
         
+        $phone->setMask('(99) 9 9999-9999');
+
         $combo_items = [];
         $combo_items[$unit->id] = $unit->name;
         
@@ -186,7 +188,7 @@ class GerenteForm extends TPage
             
             $userGerente = $object->getUserGerenteForUser();
 
-            if (empty($$userGerente->id)) {
+            if (empty($userGerente->id)) {
                 $object->addUserGerente(new Regiao($data->regiao_id));
             }else {
                 $object->editUserGerete(new Regiao($data->regiao_id));
@@ -201,8 +203,6 @@ class GerenteForm extends TPage
             //ADICIONA ID DO GERENTE
             $object->addSystemUserGroup( new SystemGroup(3));
 
-           
-            
             
             if( !empty($data->units) )
             {
