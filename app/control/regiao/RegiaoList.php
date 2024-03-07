@@ -35,7 +35,7 @@ class RegiaoList extends TPage
         $this->setDatabase('permission');
         $this->setActiveRecord('Regiao');
         $this->setDefaultOrder('id', 'asc');
-       
+
         $this->form = new BootstrapFormBuilder('form_search_regiaoList');
         $this->form->setFormTitle('Região');
 
@@ -95,32 +95,31 @@ class RegiaoList extends TPage
         $this->pageNavigation->setWidth($this->datagrid->getWidth());
 
         $panel = new TPanelGroup();
-        $panel->add($this->datagrid)->style='overflow-x:auto;';
+        $panel->add($this->datagrid)->style = 'overflow-x:auto;';
         $panel->addFooter($this->pageNavigation);
 
         // header actions
         $dropdown = new TDropDown(_t('Export'), 'fa:list');
         $dropdown->setPullSide('right');
         $dropdown->setButtonClass('btn btn-default waves-effect dropdown-toggle');
-        $dropdown->addAction( _t('Save as CSV'), new TAction([$this, 'onExportCSV'], ['register_state' => 'false', 'static'=>'1']), 'fa:table fa-fw blue' );
-        $dropdown->addAction( _t('Save as PDF'), new TAction([$this, 'onExportPDF'], ['register_state' => 'false', 'static'=>'1']), 'far:file-pdf fa-fw red' );
-        $dropdown->addAction( _t('Save as XML'), new TAction([$this, 'onExportXML'], ['register_state' => 'false', 'static'=>'1']), 'fa:code fa-fw green' );
-        $panel->addHeaderWidget( $dropdown );
-        
+        $dropdown->addAction(_t('Save as CSV'), new TAction([$this, 'onExportCSV'], ['register_state' => 'false', 'static' => '1']), 'fa:table fa-fw blue');
+        $dropdown->addAction(_t('Save as PDF'), new TAction([$this, 'onExportPDF'], ['register_state' => 'false', 'static' => '1']), 'far:file-pdf fa-fw red');
+        $dropdown->addAction(_t('Save as XML'), new TAction([$this, 'onExportXML'], ['register_state' => 'false', 'static' => '1']), 'fa:code fa-fw green');
+        $panel->addHeaderWidget($dropdown);
+
         // vertical box container
         $container = new TVBox;
         $container->style = 'width: 100%';
         $container->add(new TXMLBreadCrumb('menu.xml', __CLASS__));
         $container->add($this->form);
         $container->add($panel);
-        
+
         parent::add($container);
     }
 
     public function onReload($param = NULL)
     {
-        try 
-        {   
+        try {
             TTransaction::open('permission');
             $data = (array) $this->form->getData();
             $userId = TSession::getValue('userid');
@@ -128,15 +127,14 @@ class RegiaoList extends TPage
 
             $repository = new TRepository('Regiao');
             $limit = 10;
-            
+
             $criteria = new TCriteria;
-                                    
-            if (empty($param['order']))
-            {
+
+            if (empty($param['order'])) {
                 $param['order'] = 'id';
                 $param['direction'] = 'asc';
             }
-            
+
             $criteria->setProperties($param); // order, offset
             $criteria->setProperty('limit', $limit);
 
@@ -146,33 +144,31 @@ class RegiaoList extends TPage
                 $criteria->add(new TFilter('nome', '=', $data['nome']));
             }
 
-            $objects = $repository->load( $criteria );
+            $objects = $repository->load($criteria);
 
             $this->datagrid->clear();
-            
-            if ($objects)
-            {
-                foreach($objects as $object)
-                {
+
+            if ($objects) {
+                foreach ($objects as $object) {
                     $this->datagrid->addItem($object);
                 }
             }
-            
+
             $criteria->resetProperties();
             $count = $repository->count($criteria);
-            
+
             $this->pageNavigation->setCount($count); // count of records
             $this->pageNavigation->setProperties($param); // order, page
             $this->pageNavigation->setLimit($limit); // limit
-                        
+
             TTransaction::close();
             $this->loaded = true;
 
             TTransaction::close();
-        }catch(Exception $e)
-        {
+        } catch (Exception $e) {
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
 }
+
